@@ -2,5 +2,11 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import './registerServiceWorker'
 import router from './router'
+import './index.css'
+import mdiVue from 'mdi-vue/v3'
+import * as mdijs from '@mdi/js'
 
-createApp(App).use(router).mount('#app')
+createApp(App)
+    .use(mdiVue, { icons: mdijs })
+    .use(router)
+    .mount('#app')
