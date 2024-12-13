@@ -10,6 +10,17 @@ const noPlayers = computed(() => {
   if (players.value.length === 0) return true;
   return false;
 });
+
+function addNewPlayer(player: string | Player) {
+  if (typeof player === "string") {
+    players.value.push({
+      id: 1,
+      name: player,
+      average: 0,
+      points: 0,
+    });
+  }
+}
 </script>
 
 <template>
@@ -37,6 +48,6 @@ const noPlayers = computed(() => {
       :class="{ '!bg-gray-400 cursor-not-allowed': noPlayers }"
     />
 
-    <PlayerModal v-model="playerModalShown" />
+    <PlayerModal v-model="playerModalShown" @update-players="addNewPlayer" />
   </main>
 </template>

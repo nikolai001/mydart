@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { Player } from "@/types/game";
 import { ref } from "vue";
 interface Props {
   modelValue: boolean;
@@ -8,10 +9,12 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
+  (e: "updatePlayers", value: string | Player): void;
 }>();
 
 const addNewPlayersShown = ref(false);
 const storedPlayers = ref([]);
+const player = ref<String>("");
 </script>
 
 <template>
@@ -50,10 +53,12 @@ const storedPlayers = ref([]);
         type="text"
         id="name"
         class="outline-none py-1 px-2 rounded-md shadow-sm hover:shadow-md transition-all hover:bg-slate-50 bg-white"
+        v-model="player"
       />
       <button
         v-text="'Add player'"
         class="bg-green-500 rounded-md p-2 font-medium text-white hover:bg-green-600 transition-colors ml-auto shadow-sm"
+        @click="emit('updatePlayers', player as string)"
       />
     </div>
   </div>
