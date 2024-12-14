@@ -4,3 +4,13 @@ export type Player = {
     points: number,
     average: number,
 }
+
+export enum Gamemode {
+    'Normal' = 1,
+    'AroundTheWorld' = 2,
+}
+
+export interface Game {
+    players: Player[],
+    Gamemode: Gamemode,
+}

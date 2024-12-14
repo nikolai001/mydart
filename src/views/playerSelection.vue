@@ -1,38 +1,21 @@
 <script lang="ts" setup>
 import PlayerModal from "@/components/PlayerModal.vue";
-import { Player } from "@/types/game";
-import { computed, ref } from "vue";
+import { useGameStore } from "@/store/game-store";
+import { Gamemode, Player } from "@/types/game";
+import { computed, onMounted, ref } from "vue";
 
-const players = ref<Player[]>([
-  { id: 1, name: "bo", average: 0, points: 0 },
-  { id: 2, name: "preben", average: 0, points: 0 },
-]);
+const gameStore = useGameStore();
+
+const players = ref<Player[]>([]);
 const playerModalShown = ref(false);
+const gamemode = <Gamemode>Gamemode.Normal;
 
 const noPlayers = computed(() => {
-  if (players.value.length === 0) return true;
+  if (gameStore.gameLobby?.players.length === 0) return true;
   return false;
 });
 
-function addNewPlayer(player: string | Player) {
-  if (typeof player === "string") {
-    players.value.push({
-      id: 1,
-      name: player,
-      average: 0,
-      points: 0,
-    });
-  }
-}
-
-function removePlayer(player: Player) {
-  const index = players.value.findIndex(
-    (currentPlayer) => currentPlayer.id === player.id
-  );
-  if (index !== -1) {
-    players.value.splice(index, 1);
-  }
-}
+onMounted(() => gameStore.initializeGameLobby(gamemode));
 </script>
 
 <template>
@@ -41,7 +24,7 @@ function removePlayer(player: Player) {
       <span v-if="noPlayers" v-text="'No players'" class="text-center" />
       <div class="rounded-md overflow-hidden shadow-sm">
         <div
-          v-for="player in players"
+          v-for="player in gameStore.gameLobby?.players"
           class="flex mx-auto w-full even:bg-gray-400 odd:bg-gray-500 text-white py-2 px-4"
         >
           <span :key="player.id" v-text="player.name" />
@@ -52,7 +35,7 @@ function removePlayer(player: Player) {
           />
           <button
             class="flex justify-center items-center"
-            @click="removePlayer(player)"
+            @click="gameStore.removePlayer(player)"
           >
             <mdicon name="close" class="text-red-500 hover:text-red-200" />
           </button>
@@ -75,6 +58,6 @@ function removePlayer(player: Player) {
       :class="{ '!bg-gray-400 cursor-not-allowed': noPlayers }"
     />
 
-    <PlayerModal v-model="playerModalShown" @update-players="addNewPlayer" />
+    <PlayerModal v-model="playerModalShown" />
   </main>
 </template>

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { Player } from "@/types/game";
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useGameStore } from "@/store/game-store";
 interface Props {
   modelValue: boolean;
 }
@@ -9,12 +10,20 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
-  (e: "updatePlayers", value: string | Player): void;
 }>();
 
+const gameStore = useGameStore();
+
 const addNewPlayersShown = ref(false);
-const storedPlayers = ref([]);
 const player = ref<String>("");
+
+const storedPlayers = computed(() => {
+  return gameStore.players.filter((plr) => {
+    return !gameStore.gameLobby?.players.some(
+      (gamePlayer) => gamePlayer.id === plr.id
+    );
+  });
+});
 </script>
 
 <template>
@@ -28,6 +37,17 @@ const player = ref<String>("");
     >
       <mdicon name="close" height="20" width="20" />
     </button>
+
+    <div class="flex space-x-2 justify-center mb-2">
+      <button
+        @click="gameStore.addPlayer(player as Player)"
+        class="bg-sky-500 shadow-md rounded-md px-3 py-1 hover:bg-sky-600 transition-colors"
+        v-for="player in storedPlayers"
+      >
+        {{ player.name }}
+      </button>
+    </div>
+
     <button
       v-if="storedPlayers.length > 0"
       class="flex flex-wrap w-max mx-auto"
@@ -58,7 +78,7 @@ const player = ref<String>("");
       <button
         v-text="'Add player'"
         class="bg-green-500 rounded-md p-2 font-medium text-white hover:bg-green-600 transition-colors ml-auto shadow-sm"
-        @click="emit('updatePlayers', player as string)"
+        @click="gameStore.addPlayer(player as string)"
       />
     </div>
   </div>
