@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import IndexView from '@/views/IndexView.vue'
 import PlayerSelection from '@/views/playerSelection.vue'
+import GameScreen from '@/views/GameScreen.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -12,6 +13,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'playerSelection',
     component: PlayerSelection
   },
+  {
+    path: '/game',
+    name: 'game',
+    component: GameScreen
+  }
 ]
 
 const router = createRouter({

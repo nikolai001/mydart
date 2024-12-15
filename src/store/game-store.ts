@@ -1,9 +1,9 @@
-import { Game, Gamemode, Player } from '@/types/game'
+import { Game, Gamemode, Multiplier, Player } from '@/types/game'
 import { defineStore } from 'pinia'
-import { RemovableRef, useStorage } from '@vueuse/core';
+import { RemovableRef, useStorage } from '@vueuse/core'
 
 interface GameStoreState {
-    currentGame: RemovableRef<Game | null>
+    currentGame: RemovableRef<string | null>
     previousGames: RemovableRef<Game[]>
     players: RemovableRef<Player[]>
     gameLobby: RemovableRef<Game | null>
@@ -12,39 +12,44 @@ interface GameStoreState {
 
 export const useGameStore = defineStore('GameStore', {
     state: (): GameStoreState => ({
-        currentGame: useStorage<Game | null>('current-game', null, localStorage),
+        currentGame: useStorage<string | null>('current-game', '', localStorage),
         previousGames: useStorage<Game[]>('previous-games', [], localStorage),
         players: useStorage<Player[]>('players', [], localStorage),
-        gameLobby: useStorage<Game>('game-lobby', { Gamemode: Gamemode.Normal, players: [] }, localStorage),
+        gameLobby: useStorage<Game>('game-lobby', { Gamemode: Gamemode.Normal, players: [], currentPlayer: null, round: 1 }, localStorage),
     }),
 
     getters: {
         lastPlayers: (state): Player[] | null => {
-            const lastGame = state.previousGames[state.previousGames.length - 1];
-            return lastGame?.players || null;
+            const lastGame = state.previousGames[state.previousGames.length - 1]
+            return lastGame?.players || null
         },
+
+        getCurrentGame: (state): Game | null => {
+            return state.currentGame ? JSON.parse(state.currentGame) : null
+        }
     },
     actions: {
 
         addPlayer(createdPlayer: string | Player) {
 
             if (typeof createdPlayer === 'string') {
+                if (createdPlayer.trim().length < 1) return
 
                 if (this.players?.find((plr) => plr.name.toLowerCase() === createdPlayer.toLowerCase())) return
 
                 const id = this.players.length ? this.players[this.players.length - 1].id + 1 : 1
-                const newPlayer = { id, name: createdPlayer, points: 0, average: 0 }
+                const newPlayer = { id, name: createdPlayer, totalPoints: 301, average: 0 }
                 this.players.push(newPlayer)
                 const addedPlayer = this.players.find((player) => player.id === newPlayer.id)
 
                 if (!addedPlayer) return
 
                 if (this.gameLobby) {
-                    this.gameLobby.players.push(addedPlayer);
+                    this.gameLobby.players.push(addedPlayer)
                 }
             } else {
                 if (this.gameLobby) {
-                    this.gameLobby.players.push(createdPlayer);
+                    this.gameLobby.players.push(createdPlayer)
                 }
             }
         },
@@ -52,36 +57,77 @@ export const useGameStore = defineStore('GameStore', {
         removePlayer(player: Player) {
             const index = this.gameLobby!.players.findIndex(
                 (currentPlayer) => currentPlayer.id === player.id
-            );
+            )
             console.log(index)
             if (index !== -1) {
-                this.gameLobby!.players.splice(index, 1);
+                this.gameLobby!.players.splice(index, 1)
             }
+        },
+
+        addPoint(point: number, multiplier?: Multiplier) {
+            const game = this.getCurrentGame
+            if (!game) return
+
+            if (!Array.isArray(game.points)) {
+                game.points = []
+            }
+
+            let pointsSet = game.points.find(
+                (entry) => entry.player.id === game.currentPlayer!.id && entry.round === game.round
+            )
+
+            if (!pointsSet) {
+                pointsSet = {
+                    player: game.currentPlayer!,
+                    round: game.round,
+                    points: [],
+                }
+                game.points.push(pointsSet)
+            }
+
+            const finalPoints = point * (multiplier ?? 1)
+            pointsSet.points!.push(finalPoints)
+
+            if (pointsSet.points!.length === 3) {
+                const playerIndex = game.players.findIndex((player) => player.id === game.currentPlayer!.id)
+                if (playerIndex !== -1 && playerIndex < game.players.length - 1) {
+                    game.currentPlayer = game.players[playerIndex + 1]
+                } else {
+                    game.currentPlayer = game.players[0]
+                    game.round++
+                }
+            }
+
+            this.currentGame = JSON.stringify(game)
         },
 
         initializeGameLobby(gamemode: Gamemode) {
             if (!this.gameLobby) {
-                this.gameLobby = { Gamemode: gamemode, players: [] };
-                console.log('Game lobby initialized');
+                this.gameLobby = { Gamemode: gamemode, players: [], currentPlayer: null, round: 1 }
             }
 
             if (!this.gameLobby.players) {
-                this.gameLobby.players = [];
+                this.gameLobby.players = []
             }
         },
 
-        startGame(players: Player[], gamemode: Gamemode) {
+        startGame() {
             if (this.currentGame) {
-                this.previousGames.push(this.currentGame);
+                this.previousGames.push(JSON.parse(this.currentGame))
             }
 
-            this.currentGame = {
-                players: players.map(player => ({
+            const shuffledPlayers = this.gameLobby!.players.sort(() => Math.random() - 0.5)
+
+            this.currentGame = JSON.stringify({
+                players: shuffledPlayers.map((player) => ({
                     ...player,
-                    points: 0,
+                    totalPoints: player.totalPoints,
                 })),
-                Gamemode: gamemode,
-            };
-        },
+                Gamemode: this.gameLobby!.Gamemode,
+                currentPlayer: shuffledPlayers[0],
+                points: [],
+                round: 1,
+            })
+        }
     },
 })

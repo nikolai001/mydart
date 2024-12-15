@@ -51,11 +51,13 @@ onMounted(() => gameStore.initializeGameLobby(gamemode));
         </button>
       </div>
     </section>
-    <button
+    <router-link
       v-text="'Start game'"
       class="bg-green-500 rounded-md p-2 font-medium text-white hover:bg-green-600 transition-colors w-10/12 mx-auto"
       :disabled="noPlayers"
       :class="{ '!bg-gray-400 cursor-not-allowed': noPlayers }"
+      :to="'/game'"
+      @click="gameStore.startGame()"
     />
 
     <PlayerModal v-model="playerModalShown" />

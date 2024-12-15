@@ -1,16 +1,30 @@
 export type Player = {
     id: number,
     name: string,
-    points: number,
+    totalPoints: number,
     average: number,
 }
 
-export enum Gamemode {
-    'Normal' = 1,
-    'AroundTheWorld' = 2,
+export interface Point {
+    round: number;
+    points?: number[];
+    player: Player;
 }
-
 export interface Game {
     players: Player[],
     Gamemode: Gamemode,
+    currentPlayer: Player | null
+    round: number
+    points?: Point[]
+}
+
+
+export enum Gamemode {
+    'Normal' = 0,
+    'AroundTheWorld' = 1,
+}
+
+export enum Multiplier {
+    'Double' = 2,
+    'Triple' = 3
 }
