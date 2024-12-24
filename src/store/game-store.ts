@@ -1,21 +1,20 @@
 import { Game, Gamemode, Multiplier, Player } from '@/types/game'
 import { defineStore } from 'pinia'
-import { RemovableRef, useStorage } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
 
 interface GameStoreState {
-    currentGame: RemovableRef<string | null>
-    previousGames: RemovableRef<Game[]>
-    players: RemovableRef<Player[]>
-    gameLobby: RemovableRef<Game | null>
+    currentGame: Game | null
+    previousGames: Game[]
+    players: Player[]
+    gameLobby: Game | null
 }
-
 
 export const useGameStore = defineStore('GameStore', {
     state: (): GameStoreState => ({
-        currentGame: useStorage<string | null>('current-game', '', localStorage),
-        previousGames: useStorage<Game[]>('previous-games', [], localStorage),
-        players: useStorage<Player[]>('players', [], localStorage),
-        gameLobby: useStorage<Game>('game-lobby', { Gamemode: Gamemode.Normal, players: [], currentPlayer: null, round: 1 }, localStorage),
+        currentGame: useLocalStorage('current-game', { players: null, Gamemode: 0, currentPlayer: null, round: null }).value,
+        previousGames: useLocalStorage('previous-games', []).value,
+        players: useLocalStorage('players', []).value,
+        gameLobby: useLocalStorage('game-lobby', { players: null, Gamemode: 0, currentPlayer: null, round: null }).value
     }),
 
     getters: {
@@ -25,7 +24,7 @@ export const useGameStore = defineStore('GameStore', {
         },
 
         getCurrentGame: (state): Game | null => {
-            return state.currentGame ? JSON.parse(state.currentGame) : null
+            return state.currentGame
         }
     },
     actions: {
@@ -45,22 +44,21 @@ export const useGameStore = defineStore('GameStore', {
                 if (!addedPlayer) return
 
                 if (this.gameLobby) {
-                    this.gameLobby.players.push(addedPlayer)
+                    this.gameLobby.players!.push(addedPlayer)
                 }
             } else {
                 if (this.gameLobby) {
-                    this.gameLobby.players.push(createdPlayer)
+                    this.gameLobby.players!.push(createdPlayer)
                 }
             }
         },
 
         removePlayer(player: Player) {
-            const index = this.gameLobby!.players.findIndex(
+            const index = this.gameLobby!.players!.findIndex(
                 (currentPlayer) => currentPlayer.id === player.id
             )
-            console.log(index)
             if (index !== -1) {
-                this.gameLobby!.players.splice(index, 1)
+                this.gameLobby!.players!.splice(index, 1)
             }
         },
 
@@ -79,7 +77,7 @@ export const useGameStore = defineStore('GameStore', {
             if (!pointsSet) {
                 pointsSet = {
                     player: game.currentPlayer!,
-                    round: game.round,
+                    round: game.round!,
                     points: [],
                 }
                 game.points.push(pointsSet)
@@ -89,45 +87,42 @@ export const useGameStore = defineStore('GameStore', {
             pointsSet.points!.push(finalPoints)
 
             if (pointsSet.points!.length === 3) {
-                const playerIndex = game.players.findIndex((player) => player.id === game.currentPlayer!.id)
-                if (playerIndex !== -1 && playerIndex < game.players.length - 1) {
-                    game.currentPlayer = game.players[playerIndex + 1]
+                const playerIndex = game.players!.findIndex((player) => player.id === game.currentPlayer!.id)
+                if (playerIndex !== -1 && playerIndex < game.players!.length - 1) {
+                    game.currentPlayer = game.players![playerIndex + 1]
                 } else {
-                    game.currentPlayer = game.players[0]
-                    game.round++
+                    game.currentPlayer = game.players![0]
+                    game.round!++
                 }
             }
 
-            this.currentGame = JSON.stringify(game)
+            this.currentGame = game
         },
 
         initializeGameLobby(gamemode: Gamemode) {
-            if (!this.gameLobby) {
-                this.gameLobby = { Gamemode: gamemode, players: [], currentPlayer: null, round: 1 }
-            }
+            this.gameLobby!.Gamemode = gamemode
+            this.gameLobby!.players = []
+            this.gameLobby!.currentPlayer = null
+            this.gameLobby!.round = null
 
-            if (!this.gameLobby.players) {
-                this.gameLobby.players = []
-            }
         },
 
         startGame() {
             if (this.currentGame) {
-                this.previousGames.push(JSON.parse(this.currentGame))
+                this.previousGames.push(this.currentGame)
             }
 
-            const shuffledPlayers = this.gameLobby!.players.sort(() => Math.random() - 0.5)
+            const shuffledPlayers = this.gameLobby!.players!.sort(() => Math.random() - 0.5)
 
-            this.currentGame = JSON.stringify({
-                players: shuffledPlayers.map((player) => ({
-                    ...player,
-                    totalPoints: player.totalPoints,
-                })),
-                Gamemode: this.gameLobby!.Gamemode,
-                currentPlayer: shuffledPlayers[0],
-                points: [],
-                round: 1,
-            })
+            this.currentGame!.players = shuffledPlayers
+            this.currentGame!.Gamemode = this.gameLobby!.Gamemode
+            this.currentGame!.round = 0
+            this.currentGame!.currentPlayer = shuffledPlayers[0]
+
+            this.gameLobby!.players = null
+            this.gameLobby!.Gamemode = null
+            this.gameLobby!.round = null
+            this.gameLobby!.currentPlayer = null
         }
     },
 })

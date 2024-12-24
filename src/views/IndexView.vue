@@ -1,3 +1,22 @@
+<script lang="ts" setup>
+import { useGameStore } from "@/store/game-store";
+import { ref } from "vue";
+import { onMounted } from "vue";
+import { useRouter } from "vue-router";
+
+const gameStore = useGameStore();
+const router = useRouter();
+
+const game = ref();
+
+onMounted(() => {
+  game.value = gameStore.getCurrentGame;
+  if (game.value.players) {
+    router.push("game");
+  }
+});
+</script>
+
 <template>
   <main class="flex flex-col bg-gray-200 h-screen">
     <img src="@/assets/dart.png" class="aspect-square w-full" />

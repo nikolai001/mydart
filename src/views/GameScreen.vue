@@ -3,14 +3,16 @@ import PointsKeyboard from "@/components/PointsKeyboard.vue";
 import { useGameStore } from "@/store/game-store";
 import { Player, Point } from "@/types/game";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const gameStore = useGameStore();
+
 const game = ref();
 
 const playerScores = computed(() => {
   if (!game.value) return;
 
-  return game.value.players.map((player: Player) => {
+  return game.value.players?.map((player: Player) => {
     const totalPoints =
       game.value.points
         ?.filter((pointEntry: Point) => pointEntry.player.id === player.id)
@@ -28,6 +30,26 @@ const playerScores = computed(() => {
   });
 });
 
+function playerRoundScore(player: Player): Number[] | undefined {
+  if (!game.value) return;
+
+  const currentRoundPoints = game.value.points?.find(
+    (pointEntry: Point) =>
+      pointEntry.player.id === player.id &&
+      pointEntry.round === game.value.round
+  );
+
+  const fallbackPoints =
+    currentRoundPoints ??
+    game.value.points?.find(
+      (pointEntry: Point) =>
+        pointEntry.player.id === player.id &&
+        pointEntry.round === game.value.round - 1
+    );
+
+  return fallbackPoints?.points?.join(", ");
+}
+
 onMounted(() => {
   game.value = gameStore.getCurrentGame;
 });
@@ -40,9 +62,13 @@ onMounted(() => {
         <div
           v-for="player in playerScores"
           :key="player.id"
-          class="flex mx-auto w-full even:bg-gray-400 odd:bg-gray-500 text-white py-2 px-4"
+          class="flex mx-auto w-full even:bg-gray-400 odd:bg-gray-500 text-white py-2 px-4 animate-gradient"
+          :class="{
+            'animate-pulse': game.currentPlayer.id === player.id,
+          }"
         >
-          <span v-text="player.name" />
+          <span v-text="player.name" class="w-16 truncate" />
+          <span v-text="playerRoundScore(player)" class="ml-20 w-1/3" />
           <span v-text="player.calculatedScore" class="ml-auto mr-10" />
         </div>
       </div>

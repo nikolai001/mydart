@@ -11,7 +11,7 @@ const playerModalShown = ref(false);
 const gamemode = <Gamemode>Gamemode.Normal;
 
 const noPlayers = computed(() => {
-  if (gameStore.gameLobby?.players.length === 0) return true;
+  if (gameStore.gameLobby?.players?.length === 0) return true;
   return false;
 });
 

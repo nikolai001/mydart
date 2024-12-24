@@ -11,10 +11,10 @@ export interface Point {
     player: Player;
 }
 export interface Game {
-    players: Player[],
-    Gamemode: Gamemode,
+    players: Player[] | null,
+    Gamemode: Gamemode | null,
     currentPlayer: Player | null
-    round: number
+    round: number | null
     points?: Point[]
 }
 

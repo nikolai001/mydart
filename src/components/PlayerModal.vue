@@ -19,7 +19,7 @@ const player = ref<String>("");
 
 const storedPlayers = computed(() => {
   return gameStore.players.filter((plr) => {
-    return !gameStore.gameLobby?.players.some(
+    return !gameStore.gameLobby?.players?.some(
       (gamePlayer) => gamePlayer.id === plr.id
     );
   });
