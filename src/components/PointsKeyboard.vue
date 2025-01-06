@@ -9,13 +9,26 @@ interface Props {
 
 const gameStore = useGameStore();
 
-const multiplier = ref<Multiplier | undefined>();
+const activeMultiplier = ref<Multiplier | undefined>();
 
 const props = defineProps<Props>();
 
 function undo() {
   if (!props.game.points || props.game.points.length === 0) return;
+  // if (props.game.winners.length === props.game.players!.length) return;
+  if (
+    props.game.winners.find(
+      (winner) => winner.id === props.game.currentPlayer!.id
+    )
+  ) {
+    const winnerIndex = props.game.winners.findIndex(
+      (winner) => winner.id === props.game.currentPlayer!.id
+    );
 
+    if (winnerIndex !== -1) {
+      props.game.winners.splice(winnerIndex, 1);
+    }
+  }
   const pointLength = props.game.points.length;
   const currentRound = props.game.points[pointLength - 1];
   const roundStartedPlayer = currentRound.points!.length > 0;
@@ -43,8 +56,6 @@ function undo() {
       if (currentIndex === 0) {
         if (props.game.round! > 1) {
           props.game.currentPlayer = players[players.length - 1];
-        }
-        if (props.game.round! > 1) {
           props.game.round!--;
         }
       } else {
@@ -52,6 +63,24 @@ function undo() {
       }
     }
   }
+}
+
+function setMultiplier(multiplier?: Multiplier) {
+  if (multiplier === activeMultiplier.value) {
+    activeMultiplier.value = undefined;
+    return;
+  }
+
+  if (multiplier === Multiplier.Double) {
+    activeMultiplier.value = Multiplier.Double;
+    return;
+  }
+  activeMultiplier.value = Multiplier.Triple;
+}
+
+function addPoint(points: number, multiplier?: Multiplier) {
+  gameStore.addPoint(points, multiplier);
+  activeMultiplier.value = undefined;
 }
 </script>
 
@@ -72,10 +101,20 @@ function undo() {
         <button
           v-text="'Double'"
           class="bg-green-600 p-2 text-white rounded-md hover:bg-green-700 transition-colors w-2/5"
+          :class="{
+            '!bg-green-300 shadow-md text-neutral-500 font-semibold':
+              activeMultiplier === Multiplier.Double,
+          }"
+          @click="setMultiplier(Multiplier.Double)"
         />
         <button
           v-text="'Triple'"
           class="bg-red-500 p-2 text-white rounded-md hover:bg-red-600 transition-colors w-2/5"
+          :class="{
+            '!bg-red-300 shadow-md text-neutral-500 font-semibold':
+              activeMultiplier === Multiplier.Triple,
+          }"
+          @click="setMultiplier(Multiplier.Triple)"
         />
       </div>
       <button
@@ -83,16 +122,18 @@ function undo() {
         :key="index"
         v-text="index"
         class="bg-gray-300 w-1/6 aspect-square rounded-md hover:bg-gray-400 transition-colors"
-        @click="gameStore.addPoint(index, multiplier)"
+        @click="addPoint(index, activeMultiplier)"
       />
       <div class="flex w-full justify-between">
         <button
           v-text="'Semi bull'"
           class="bg-green-600 p-2 text-white rounded-md hover:bg-green-700 transition-colors w-2/5"
+          @click="addPoint(25)"
         />
         <button
           v-text="'Bullseye'"
           class="bg-red-500 p-2 text-white rounded-md hover:bg-red-600 transition-colors w-2/5"
+          @click="addPoint(50)"
         />
       </div>
     </div>

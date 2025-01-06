@@ -15,6 +15,7 @@ export interface Game {
     Gamemode: Gamemode | null,
     currentPlayer: Player | null
     round: number | null
+    winners: Player[],
     points?: Point[]
 }
 

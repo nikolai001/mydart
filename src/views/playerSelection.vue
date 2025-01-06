@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import PlayerModal from "@/components/PlayerModal.vue";
+import router from "@/router";
 import { useGameStore } from "@/store/game-store";
 import { Gamemode, Player } from "@/types/game";
 import { computed, onMounted, ref } from "vue";
@@ -14,6 +15,11 @@ const noPlayers = computed(() => {
   if (gameStore.gameLobby?.players?.length === 0) return true;
   return false;
 });
+
+function startGame() {
+  router.push("/game");
+  gameStore.startGame();
+}
 
 onMounted(() => gameStore.initializeGameLobby(gamemode));
 </script>
@@ -51,13 +57,12 @@ onMounted(() => gameStore.initializeGameLobby(gamemode));
         </button>
       </div>
     </section>
-    <router-link
+    <button
       v-text="'Start game'"
       class="bg-green-500 rounded-md p-2 font-medium text-white hover:bg-green-600 transition-colors w-10/12 mx-auto"
       :disabled="noPlayers"
       :class="{ '!bg-gray-400 cursor-not-allowed': noPlayers }"
-      :to="'/game'"
-      @click="gameStore.startGame()"
+      @click="startGame()"
     />
 
     <PlayerModal v-model="playerModalShown" />

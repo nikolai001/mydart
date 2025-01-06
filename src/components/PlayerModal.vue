@@ -24,6 +24,11 @@ const storedPlayers = computed(() => {
     );
   });
 });
+
+function addPlayer(plr: string) {
+  gameStore.addPlayer(plr);
+  player.value = "";
+}
 </script>
 
 <template>
@@ -38,10 +43,10 @@ const storedPlayers = computed(() => {
       <mdicon name="close" height="20" width="20" />
     </button>
 
-    <div class="flex space-x-2 justify-center mb-2">
+    <div class="flex space-x-2 justify-center mb-2 flex-wrap">
       <button
         @click="gameStore.addPlayer(player as Player)"
-        class="bg-sky-500 shadow-md rounded-md px-3 py-1 hover:bg-sky-600 transition-colors"
+        class="bg-sky-500 shadow-md rounded-md px-3 py-1 hover:bg-sky-600 transition-colors mb-2"
         v-for="player in storedPlayers"
       >
         {{ player.name }}
@@ -78,11 +83,8 @@ const storedPlayers = computed(() => {
       <button
         v-text="'Add player'"
         class="bg-green-500 rounded-md p-2 font-medium text-white hover:bg-green-600 transition-colors ml-auto shadow-sm"
-        @click="gameStore.addPlayer(player as string)"
+        @click="addPlayer(player.toString())"
       />
     </div>
   </div>
 </template>
-
-<!-- :disabled="noPlayers"
-      :class="{ '!bg-gray-400 cursor-not-allowed': noPlayers }" -->

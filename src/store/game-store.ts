@@ -11,10 +11,10 @@ interface GameStoreState {
 
 export const useGameStore = defineStore('GameStore', {
     state: (): GameStoreState => ({
-        currentGame: useLocalStorage('current-game', { players: null, Gamemode: 0, currentPlayer: null, round: null }).value,
+        currentGame: useLocalStorage('current-game', { players: null, Gamemode: 0, currentPlayer: null, round: null, winners: [] }).value,
         previousGames: useLocalStorage('previous-games', []).value,
         players: useLocalStorage('players', []).value,
-        gameLobby: useLocalStorage('game-lobby', { players: null, Gamemode: 0, currentPlayer: null, round: null }).value
+        gameLobby: useLocalStorage('game-lobby', { players: null, Gamemode: 0, currentPlayer: null, round: null, winners: [] }).value
     }),
 
     getters: {
@@ -63,40 +63,51 @@ export const useGameStore = defineStore('GameStore', {
         },
 
         addPoint(point: number, multiplier?: Multiplier) {
-            const game = this.getCurrentGame
-            if (!game) return
+            const game = this.getCurrentGame;
+            if (!game) return;
+            if (game.winners.find((plr) => plr.id === game.currentPlayer?.id)) return
 
             if (!Array.isArray(game.points)) {
-                game.points = []
+                game.points = [];
             }
 
             let pointsSet = game.points.find(
                 (entry) => entry.player.id === game.currentPlayer!.id && entry.round === game.round
-            )
+            );
 
             if (!pointsSet) {
                 pointsSet = {
                     player: game.currentPlayer!,
                     round: game.round!,
                     points: [],
-                }
-                game.points.push(pointsSet)
+                };
+                game.points.push(pointsSet);
             }
 
-            const finalPoints = point * (multiplier ?? 1)
-            pointsSet.points!.push(finalPoints)
+            const finalPoints = point * (multiplier ?? 1);
+            pointsSet.points!.push(finalPoints);
 
             if (pointsSet.points!.length === 3) {
-                const playerIndex = game.players!.findIndex((player) => player.id === game.currentPlayer!.id)
-                if (playerIndex !== -1 && playerIndex < game.players!.length - 1) {
-                    game.currentPlayer = game.players![playerIndex + 1]
-                } else {
-                    game.currentPlayer = game.players![0]
-                    game.round!++
+                const activePlayers = game.players!.filter(
+                    (player) =>
+                        !game.winners.find((winner) => winner.id === player.id)
+                );
+
+                const currentPlayerIndex = activePlayers.findIndex(
+                    (player) => player.id === game.currentPlayer!.id
+                );
+
+                if (currentPlayerIndex !== -1) {
+                    if (currentPlayerIndex < activePlayers.length - 1) {
+                        game.currentPlayer = activePlayers[currentPlayerIndex + 1];
+                    } else {
+                        game.currentPlayer = activePlayers[0];
+                        game.round!++;
+                    }
                 }
             }
 
-            this.currentGame = game
+            this.currentGame = game;
         },
 
         initializeGameLobby(gamemode: Gamemode) {
@@ -107,22 +118,60 @@ export const useGameStore = defineStore('GameStore', {
 
         },
 
-        startGame() {
-            if (this.currentGame) {
-                this.previousGames.push(this.currentGame)
+        incrementPlayer() {
+            if (!this.currentGame!.players || !this.currentGame!.winners || !this.currentGame!.currentPlayer) return;
+
+            const activePlayers = this.currentGame!.players.filter(
+                (player) => !this.currentGame!.winners.some((winner) => winner.id === player.id)
+            );
+
+            if (activePlayers.length === 0) return;
+
+            const currentPlayerIndex = activePlayers.findIndex(
+                (player) => player.id === this.currentGame!.currentPlayer!.id
+            );
+
+            if (currentPlayerIndex !== -1 && currentPlayerIndex < activePlayers.length - 1) {
+                this.currentGame!.currentPlayer = activePlayers[currentPlayerIndex + 1];
+            } else {
+                this.currentGame!.currentPlayer = activePlayers[0];
             }
+        },
+
+        startGame() {
+            if (this.gameLobby!.players!.length < 1) return
 
             const shuffledPlayers = this.gameLobby!.players!.sort(() => Math.random() - 0.5)
 
             this.currentGame!.players = shuffledPlayers
             this.currentGame!.Gamemode = this.gameLobby!.Gamemode
-            this.currentGame!.round = 0
+            this.currentGame!.round = 1
             this.currentGame!.currentPlayer = shuffledPlayers[0]
 
             this.gameLobby!.players = null
             this.gameLobby!.Gamemode = null
             this.gameLobby!.round = null
             this.gameLobby!.currentPlayer = null
+        },
+
+        cancelGame() {
+            this.currentGame!.players = null
+            this.currentGame!.Gamemode = null
+            this.currentGame!.round = null
+            this.currentGame!.currentPlayer = null
+            this.currentGame!.points = []
+            this.currentGame!.winners = []
+        },
+
+        completeGame() {
+            this.previousGames.push(JSON.parse(JSON.stringify(this.currentGame)))
+
+            this.currentGame!.players = null
+            this.currentGame!.Gamemode = null
+            this.currentGame!.round = null
+            this.currentGame!.currentPlayer = null
+            this.currentGame!.points = []
+            this.currentGame!.winners = []
         }
     },
 })
